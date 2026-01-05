@@ -16,9 +16,15 @@ from pathlib import Path
 
 from openai import OpenAI
 
-DEFAULT_PROMPT = """Count the kills made by the player (first-person perspective). Only count kills the player gets, not other players' kills shown in the kill feed.
+DEFAULT_PROMPT = """Count the kills made by the player in this first-person gaming clip.
 
-Output ONLY a single number (0, 1, 2, 3, etc). Nothing else."""
+Think carefully through the ENTIRE video frame by frame:
+1. Watch for each enemy death caused by the player
+2. Look for hit markers, elimination notifications, and kill confirmations on screen
+3. Check the kill feed (usually top-right) to confirm kills attributed to the player
+4. Count each distinct kill - don't miss rapid successive kills
+
+After thorough analysis, output ONLY a single number (0, 1, 2, 3, etc). Nothing else."""
 
 
 def strip_thinking(text: str) -> str:
@@ -50,7 +56,7 @@ def analyze_clip(video_path: Path, prompt: str, server: str) -> str:
                 {"type": "video_url", "video_url": {"url": f"data:video/mp4;base64,{video_b64}"}}
             ]
         }],
-        max_tokens=2048  # Room for thinking + response
+        max_tokens=4096  # Room for thorough thinking + response
     )
 
     return strip_thinking(response.choices[0].message.content)
