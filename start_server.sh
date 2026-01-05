@@ -6,7 +6,7 @@
 #   2. Open Ubuntu terminal and run: ./start_server.sh
 
 VENV_DIR="$HOME/vllm-omni"
-MODEL="Qwen/Qwen3-VL-8B-Thinking"
+MODEL="Qwen/Qwen3-VL-4B-Thinking"
 PORT=8901
 
 # Create venv if needed
@@ -23,13 +23,13 @@ fi
 
 echo ""
 echo "Starting Qwen3-VL server on port $PORT..."
-echo "First run will download ~17GB model."
+echo "First run will download ~9GB model."
 echo "Press Ctrl+C to stop."
 echo ""
 
 vllm serve "$MODEL" \
     --dtype bfloat16 \
-    --max-model-len 8192 \
+    --max-model-len 32768 \
     --port "$PORT" \
     --host 0.0.0.0 \
     --gpu-memory-utilization 0.90

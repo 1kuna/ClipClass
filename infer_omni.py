@@ -48,7 +48,7 @@ def analyze_clip(video_path: Path, prompt: str, server: str) -> str:
 
     print(f"Sending to server ({server})...", file=sys.stderr)
     response = client.chat.completions.create(
-        model="Qwen/Qwen3-VL-8B-Thinking",
+        model="Qwen/Qwen3-VL-4B-Thinking",
         messages=[{
             "role": "user",
             "content": [
