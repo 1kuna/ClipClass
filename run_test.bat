@@ -112,7 +112,7 @@ if not exist ".venv\.installed" (
 :check_server
 echo [..] Checking vLLM server connection...
 
-powershell -Command "try { $null = Invoke-WebRequest -Uri 'http://localhost:8901/health' -TimeoutSec 5 -ErrorAction Stop; exit 0 } catch { exit 1 }" >nul 2>&1
+powershell -Command "try { $null = Invoke-WebRequest -Uri 'http://localhost:8901/v1/models' -TimeoutSec 5 -ErrorAction Stop; exit 0 } catch { exit 1 }" >nul 2>&1
 if errorlevel 1 (
     echo.
     echo [ERROR] vLLM server is not running!
