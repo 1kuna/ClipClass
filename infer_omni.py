@@ -33,9 +33,11 @@ After thorough analysis, output ONLY a single number (0, 1, 2, 3, etc). Nothing 
 
 def strip_thinking(text: str) -> str:
     """Remove thinking blocks from model output."""
-    # Handle both <think>...</think> and just </think> (when template adds opening)
+    # Handle <think>...</think>
     text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
-    text = re.sub(r'^.*?</think>', '', text, flags=re.DOTALL)  # Remove everything before </think>
+    # Handle when template auto-adds <think> (output only has </think>)
+    if '</think>' in text:
+        text = text.split('</think>')[-1]
     return text.strip()
 
 
@@ -86,7 +88,10 @@ def analyze_clip(video_path: Path, prompt: str, server: str, fps: float) -> str:
                 {"type": "video_url", "video_url": {"url": f"data:video/mp4;base64,{video_b64}"}}
             ]
         }],
-        max_tokens=4096  # Room for thorough thinking + response
+        max_tokens=16384,  # Thinking needs lots of room
+        temperature=1.0,
+        top_p=0.95,
+        extra_body={"top_k": 20}
     )
 
     return strip_thinking(response.choices[0].message.content)
