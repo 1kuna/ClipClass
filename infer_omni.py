@@ -79,7 +79,8 @@ def preprocess_video(video_path: Path, max_height: int = 720, fps: float = 6.0, 
     return data
 
 
-def analyze_clip(video_path: Path, prompt: str, server: str, fps: float, debug: bool = False) -> str:
+def analyze_clip(video_path: Path, prompt: str, server: str, fps: float,
+                 debug: bool = False, save_thinking: Path = None) -> str:
     """Send video to Qwen3-VL server for analysis."""
     client = OpenAI(
         api_key="not-used",
@@ -106,7 +107,13 @@ def analyze_clip(video_path: Path, prompt: str, server: str, fps: float, debug: 
         extra_body={"top_k": 20}
     )
 
-    return strip_thinking(response.choices[0].message.content)
+    raw_response = response.choices[0].message.content
+
+    if save_thinking:
+        save_thinking.write_text(raw_response, encoding='utf-8')
+        print(f"Thinking saved to: {save_thinking}", file=sys.stderr)
+
+    return strip_thinking(raw_response)
 
 
 def main():
@@ -138,6 +145,12 @@ def main():
         action="store_true",
         help="Save preprocessed video for inspection",
     )
+    parser.add_argument(
+        "--save-thinking",
+        type=Path,
+        metavar="FILE",
+        help="Save full response with thinking to file",
+    )
 
     args = parser.parse_args()
 
@@ -145,7 +158,8 @@ def main():
         print(f"Error: Video not found: {args.video}", file=sys.stderr)
         sys.exit(1)
 
-    result = analyze_clip(args.video, args.prompt, args.server, args.fps, args.debug)
+    result = analyze_clip(args.video, args.prompt, args.server, args.fps,
+                          args.debug, args.save_thinking)
     print(result)
 
 
