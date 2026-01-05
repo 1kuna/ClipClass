@@ -54,25 +54,44 @@ call .venv\Scripts\activate.bat
 :: PHASE 3: CHECK/INSTALL FFMPEG
 :: ============================================
 
-where ffmpeg >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [..] FFmpeg not found. Installing via winget...
-    winget install Gyan.FFmpeg --accept-package-agreements --accept-source-agreements
-    if !errorlevel! neq 0 (
-        echo.
-        echo [ERROR] Failed to install FFmpeg via winget.
-        echo.
-        echo Please install FFmpeg manually:
-        echo   1. Download from: https://www.gyan.dev/ffmpeg/builds/
-        echo   2. Extract and add the bin folder to your PATH
-        echo.
-        pause
-        exit /b 1
-    )
-    echo [OK] FFmpeg installed
-    echo [!!] You may need to restart this script for FFmpeg to be recognized.
-    pause
+:: Try to run ffmpeg directly
+ffmpeg -version >nul 2>&1
+if !errorlevel! equ 0 (
+    echo [OK] FFmpeg found
+    goto :ffmpeg_done
 )
+
+:: Check winget portable location and add to PATH if found
+for /d %%D in ("%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg*") do (
+    if exist "%%D\ffmpeg-*\bin\ffmpeg.exe" (
+        for /d %%B in ("%%D\ffmpeg-*\bin") do (
+            set "PATH=%%B;!PATH!"
+            echo [OK] FFmpeg found in winget packages
+            goto :ffmpeg_done
+        )
+    )
+)
+
+:: Not found anywhere, install it
+echo [..] FFmpeg not found. Installing via winget...
+winget install Gyan.FFmpeg --accept-package-agreements --accept-source-agreements
+if !errorlevel! neq 0 (
+    echo.
+    echo [ERROR] Failed to install FFmpeg via winget.
+    echo.
+    echo Please install FFmpeg manually:
+    echo   1. Download from: https://www.gyan.dev/ffmpeg/builds/
+    echo   2. Extract and add the bin folder to your PATH
+    echo.
+    pause
+    exit /b 1
+)
+echo [OK] FFmpeg installed
+echo [!!] Please restart this script for FFmpeg to be recognized.
+pause
+exit /b 0
+
+:ffmpeg_done
 
 :: ============================================
 :: PHASE 4: INSTALL PYTHON PACKAGES
@@ -112,8 +131,8 @@ if not exist ".venv\.installed" (
 :check_server
 echo [..] Checking vLLM server connection...
 
-powershell -Command "try { $null = Invoke-WebRequest -Uri 'http://localhost:8901/v1/models' -TimeoutSec 5 -ErrorAction Stop; exit 0 } catch { exit 1 }" >nul 2>&1
-if errorlevel 1 (
+curl -s --connect-timeout 5 http://localhost:8901/v1/models >nul 2>&1
+if !errorlevel! neq 0 (
     echo.
     echo [ERROR] vLLM server is not running!
     echo.
