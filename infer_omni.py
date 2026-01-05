@@ -41,8 +41,11 @@ def strip_thinking(text: str) -> str:
     return text.strip()
 
 
-def preprocess_video(video_path: Path, max_height: int = 1080, fps: float = 3.0) -> bytes:
+def preprocess_video(video_path: Path, max_height: int = 720, fps: float = 6.0, debug: bool = False) -> bytes:
     """Resize video to max_height and resample to target fps using ffmpeg."""
+    orig_size = video_path.stat().st_size
+    print(f"Original video: {orig_size / 1024 / 1024:.2f} MB", file=sys.stderr)
+
     with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp:
         tmp_path = tmp.name
 
@@ -64,10 +67,19 @@ def preprocess_video(video_path: Path, max_height: int = 1080, fps: float = 3.0)
     with open(tmp_path, 'rb') as f:
         data = f.read()
     os.unlink(tmp_path)
+
+    print(f"Processed video: {len(data) / 1024 / 1024:.2f} MB", file=sys.stderr)
+
+    if debug:
+        debug_path = video_path.with_suffix('.debug.mp4')
+        with open(debug_path, 'wb') as f:
+            f.write(data)
+        print(f"Debug video saved: {debug_path}", file=sys.stderr)
+
     return data
 
 
-def analyze_clip(video_path: Path, prompt: str, server: str, fps: float) -> str:
+def analyze_clip(video_path: Path, prompt: str, server: str, fps: float, debug: bool = False) -> str:
     """Send video to Qwen3-VL server for analysis."""
     client = OpenAI(
         api_key="not-used",
@@ -75,7 +87,7 @@ def analyze_clip(video_path: Path, prompt: str, server: str, fps: float) -> str:
     )
 
     print(f"Loading video: {video_path}", file=sys.stderr)
-    video_data = preprocess_video(video_path, max_height=1080, fps=fps)
+    video_data = preprocess_video(video_path, max_height=720, fps=fps, debug=debug)
     video_b64 = base64.b64encode(video_data).decode()
 
     print(f"Sending to server ({server})...", file=sys.stderr)
@@ -118,8 +130,13 @@ def main():
     parser.add_argument(
         "--fps",
         type=float,
-        default=3.0,
-        help="Frames per second to sample (default: 3.0)",
+        default=6.0,
+        help="Frames per second to sample (default: 6.0)",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Save preprocessed video for inspection",
     )
 
     args = parser.parse_args()
@@ -128,7 +145,7 @@ def main():
         print(f"Error: Video not found: {args.video}", file=sys.stderr)
         sys.exit(1)
 
-    result = analyze_clip(args.video, args.prompt, args.server, args.fps)
+    result = analyze_clip(args.video, args.prompt, args.server, args.fps, args.debug)
     print(result)
 
 
