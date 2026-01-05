@@ -54,11 +54,11 @@ call .venv\Scripts\activate.bat
 :: PHASE 3: CHECK/INSTALL FFMPEG
 :: ============================================
 
-ffmpeg -version >nul 2>&1
-if errorlevel 1 (
+where ffmpeg >nul 2>&1
+if %errorlevel% neq 0 (
     echo [..] FFmpeg not found. Installing via winget...
     winget install Gyan.FFmpeg --accept-package-agreements --accept-source-agreements
-    if errorlevel 1 (
+    if !errorlevel! neq 0 (
         echo.
         echo [ERROR] Failed to install FFmpeg via winget.
         echo.
