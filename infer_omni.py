@@ -31,8 +31,11 @@ Your response must be ONLY the category label, no explanation."""
 
 
 def strip_thinking(text: str) -> str:
-    """Remove <think>...</think> blocks from model output."""
-    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+    """Remove thinking blocks from model output."""
+    # Handle both <think>...</think> and just </think> (when template adds opening)
+    text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    text = re.sub(r'^.*?</think>', '', text, flags=re.DOTALL)  # Remove everything before </think>
+    return text.strip()
 
 
 def analyze_clip(video_path: Path, prompt: str, server: str) -> str:
@@ -56,7 +59,7 @@ def analyze_clip(video_path: Path, prompt: str, server: str) -> str:
                 {"type": "video_url", "video_url": {"url": f"data:video/mp4;base64,{video_b64}"}}
             ]
         }],
-        max_tokens=128
+        max_tokens=2048  # Room for thinking + response
     )
 
     return strip_thinking(response.choices[0].message.content)
