@@ -22,30 +22,20 @@ from openai import OpenAI
 
 DEFAULT_PROMPT = """Count the kills made by the player in this first-person Valorant clip.
 
-STEP 1 - SCAN EVERY FRAME SYSTEMATICALLY:
-Go through EVERY frame from start to finish. For each frame, note:
-- What action is the player (first-person view) taking?
-- What entries are visible in the kill feed (top-right corner)?
+The kill feed is in the top-right corner. Format: [Killer] [weapon icon] [Victim]
+- Name on LEFT of icon = killer
+- Name on RIGHT of icon = victim
 
-STEP 2 - IDENTIFY THE PLAYER'S NAME:
-When YOU (first-person view) shoot and an enemy dies, a kill feed entry appears.
-The name on the LEFT side of the weapon icon in that entry is YOUR name.
-Remember this name for the rest of the video.
+First, identify which name is the player by watching when YOU (first-person) kill someone.
+Then list every kill feed entry where that name is the killer.
 
-STEP 3 - COUNT ALL KILLS:
-Scan the kill feed in EVERY frame. Count each unique entry where the player's name is on the LEFT.
-Don't skip frames - kills can happen rapidly and each kill feed entry is only visible briefly.
-
-Kill feed format: [Killer] [weapon/ability icon] [Victim]
-- Left of icon = killer
-- Right of icon = victim
-
-DO NOT count:
-- Kills by teammates (different names on the left)
-- Deaths (player's name on the right side)
-- Round score at top (e.g., 9-8 = rounds, not kills)
-
-Output ONLY a single number (0, 1, 2, 3, etc). Nothing else."""
+Output format:
+PLAYER NAME: [name]
+KILLS:
+1. [victim name]
+2. [victim name]
+...
+TOTAL: [number]"""
 
 
 def strip_thinking(text: str) -> str:
