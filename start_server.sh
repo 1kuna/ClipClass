@@ -1,12 +1,12 @@
 #!/bin/bash
-# Qwen3-Omni Server Starter for RTX 4090 (Linux/WSL2)
+# Qwen3-VL Server Starter for RTX 4090 (Linux/WSL2)
 #
 # On Windows: Run this inside WSL2 Ubuntu
 #   1. Install WSL2: wsl --install -d Ubuntu-24.04
 #   2. Open Ubuntu terminal and run: ./start_server.sh
 
 VENV_DIR="$HOME/vllm-omni"
-MODEL="cpatonn/Qwen3-Omni-30B-A3B-Instruct-AWQ-4bit"
+MODEL="Qwen/Qwen3-VL-8B-Thinking"
 PORT=8901
 
 # Create venv if needed
@@ -22,15 +22,14 @@ else
 fi
 
 echo ""
-echo "Starting Qwen3-Omni server on port $PORT..."
-echo "First run will download ~18GB model."
+echo "Starting Qwen3-VL server on port $PORT..."
+echo "First run will download ~17GB model."
 echo "Press Ctrl+C to stop."
 echo ""
 
 vllm serve "$MODEL" \
-    --quantization awq \
     --dtype bfloat16 \
-    --max-model-len 16384 \
+    --max-model-len 8192 \
     --port "$PORT" \
     --host 0.0.0.0 \
-    --gpu-memory-utilization 0.95
+    --gpu-memory-utilization 0.90
