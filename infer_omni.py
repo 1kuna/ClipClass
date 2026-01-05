@@ -20,15 +20,21 @@ from pathlib import Path
 
 from openai import OpenAI
 
-DEFAULT_PROMPT = """Count the kills made by the player in this first-person gaming clip.
+DEFAULT_PROMPT = """Count the kills made by the player ("Me") in this first-person Valorant clip.
 
-Think carefully through the ENTIRE video frame by frame:
-1. Watch for each enemy death caused by the player
-2. Look for hit markers, elimination notifications, and kill confirmations on screen
-3. Check the kill feed (usually top-right) to confirm kills attributed to the player
-4. Count each distinct kill - don't miss rapid successive kills
+CRITICAL - How to read the kill feed (top-right corner):
+- Format: [Killer] [weapon/ability icon] [Victim]
+- The name on the LEFT of the weapon icon is the KILLER
+- The name on the RIGHT of the weapon icon is the VICTIM (the one who died)
+- "Me" = the player (you're counting kills FOR "Me")
+- Only count kills where "Me" appears on the LEFT side of the weapon icon
 
-After thorough analysis, output ONLY a single number (0, 1, 2, 3, etc). Nothing else."""
+DO NOT count:
+- Deaths (where "Me" is on the right side)
+- Teammate kills (other names on the left)
+- The round score at the top (e.g., 9-8) - this is rounds won, not kills
+
+After careful analysis, output ONLY a single number (0, 1, 2, 3, etc). Nothing else."""
 
 
 def strip_thinking(text: str) -> str:
