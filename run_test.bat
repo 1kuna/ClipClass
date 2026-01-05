@@ -61,35 +61,50 @@ if !errorlevel! equ 0 (
     goto :ffmpeg_done
 )
 
-:: Check winget portable location and add to PATH if found
-for /d %%D in ("%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg*") do (
-    if exist "%%D\ffmpeg-*\bin\ffmpeg.exe" (
-        for /d %%B in ("%%D\ffmpeg-*\bin") do (
-            set "PATH=%%B;!PATH!"
-            echo [OK] FFmpeg found in winget packages
-            goto :ffmpeg_done
-        )
+:: Use PowerShell to find FFmpeg in winget packages folder
+echo [..] Searching for FFmpeg...
+for /f "delims=" %%P in ('powershell -NoProfile -Command "Get-ChildItem -Path \"$env:LOCALAPPDATA\Microsoft\WinGet\Packages\" -Recurse -Filter ffmpeg.exe -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty DirectoryName"') do (
+    set "FFMPEG_DIR=%%P"
+)
+
+if defined FFMPEG_DIR (
+    set "PATH=!FFMPEG_DIR!;!PATH!"
+    ffmpeg -version >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo [OK] FFmpeg found in winget packages
+        goto :ffmpeg_done
     )
 )
 
-:: Not found anywhere, install it
+:: Not found, try to install via winget
 echo [..] FFmpeg not found. Installing via winget...
-winget install Gyan.FFmpeg --accept-package-agreements --accept-source-agreements
-if !errorlevel! neq 0 (
-    echo.
-    echo [ERROR] Failed to install FFmpeg via winget.
-    echo.
-    echo Please install FFmpeg manually:
-    echo   1. Download from: https://www.gyan.dev/ffmpeg/builds/
-    echo   2. Extract and add the bin folder to your PATH
-    echo.
-    pause
-    exit /b 1
+winget install Gyan.FFmpeg --accept-package-agreements --accept-source-agreements >nul 2>&1
+
+:: Search again after install attempt
+for /f "delims=" %%P in ('powershell -NoProfile -Command "Get-ChildItem -Path \"$env:LOCALAPPDATA\Microsoft\WinGet\Packages\" -Recurse -Filter ffmpeg.exe -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty DirectoryName"') do (
+    set "FFMPEG_DIR=%%P"
 )
-echo [OK] FFmpeg installed
-echo [!!] Please restart this script for FFmpeg to be recognized.
+
+if defined FFMPEG_DIR (
+    set "PATH=!FFMPEG_DIR!;!PATH!"
+    ffmpeg -version >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo [OK] FFmpeg installed and configured
+        goto :ffmpeg_done
+    )
+)
+
+:: Still not working
+echo.
+echo [ERROR] Could not configure FFmpeg.
+echo.
+echo Please install FFmpeg manually:
+echo   1. Download from: https://www.gyan.dev/ffmpeg/builds/
+echo   2. Extract somewhere ^(e.g., C:\ffmpeg^)
+echo   3. Add the bin folder to your system PATH
+echo.
 pause
-exit /b 0
+exit /b 1
 
 :ffmpeg_done
 
