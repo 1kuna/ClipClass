@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Qwen3-Omni Video+Audio Inference Client
+Qwen3-VL Video Inference Client
 
 Usage:
     python infer_omni.py video.mp4 "What happens in this video?"
@@ -17,14 +17,14 @@ from openai import OpenAI
 
 DEFAULT_PROMPT = """Analyze this gaming clip. Identify:
 1. Kill events (check kill log - username on LEFT of arrow means they got the kill)
-2. Funny moments from audio/reactions
+2. Funny or notable moments
 3. Skill level of plays (whiffs vs clutches)
 
 Provide a brief summary and categorize as one of: kills_X (X=count), funny, skilled, or other."""
 
 
 def analyze_clip(video_path: Path, prompt: str, server: str) -> str:
-    """Send video to Qwen3-Omni server for analysis."""
+    """Send video to Qwen3-VL server for analysis."""
     client = OpenAI(
         api_key="not-used",
         base_url=f"http://{server}/v1"
@@ -36,7 +36,7 @@ def analyze_clip(video_path: Path, prompt: str, server: str) -> str:
 
     print(f"Sending to server ({server})...", file=sys.stderr)
     response = client.chat.completions.create(
-        model="cpatonn/Qwen3-Omni-30B-A3B-Instruct-AWQ-4bit",
+        model="Qwen/Qwen3-VL-8B-Thinking",
         messages=[{
             "role": "user",
             "content": [
@@ -52,7 +52,7 @@ def analyze_clip(video_path: Path, prompt: str, server: str) -> str:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Analyze video clips with Qwen3-Omni (audio+video)",
+        description="Analyze video clips with Qwen3-VL",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
