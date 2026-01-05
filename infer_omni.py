@@ -7,7 +7,7 @@ Usage:
     python infer_omni.py video.mp4                    # Full frame analysis
     python infer_omni.py video.mp4 "What happens?"   # Custom prompt
     python infer_omni.py video.mp4 --crop --debug    # Save cropped video for inspection
-    python infer_omni.py video.mp4 --scale 1.0       # Full resolution
+    python infer_omni.py video.mp4 --height 720      # Scale to 720p
     python infer_omni.py video.mp4 --server 192.168.1.100:8901
 """
 
@@ -89,14 +89,14 @@ def strip_thinking(text: str) -> str:
     return stripped.strip()
 
 
-def preprocess_video(video_path: Path, fps: float = 5.0, scale: float = 0.8,
+def preprocess_video(video_path: Path, fps: float = 3.0, max_height: int = 900,
                      crop_killfeed: bool = False, debug: bool = False) -> bytes:
     """Preprocess video: optionally crop to kill feed, scale, and resample fps.
 
     Args:
         video_path: Path to input video
         fps: Target frames per second
-        scale: Scale factor (0.8 = 80% of original resolution)
+        max_height: Scale to this height (maintains aspect ratio)
         crop_killfeed: If True, crop to top-right region where kill feed appears
         debug: If True, save processed video for inspection
     """
@@ -115,9 +115,9 @@ def preprocess_video(video_path: Path, fps: float = 5.0, scale: float = 0.8,
         filters.append('crop=iw*0.40:ih*0.45:iw*0.60:0')
         print(f"Cropping to kill feed region (top-right 40%x45%)", file=sys.stderr)
 
-    # Scale to target size, ensuring even dimensions for libx264
-    # -2 means "round to nearest even number"
-    filters.append(f'scale=trunc(iw*{scale}/2)*2:trunc(ih*{scale}/2)*2:flags=lanczos')
+    # Scale to max_height, maintaining aspect ratio, ensuring even dimensions
+    # -2 means "calculate width to maintain aspect ratio, round to even"
+    filters.append(f'scale=-2:{max_height}:flags=lanczos')
 
     # Resample framerate
     filters.append(f'fps={fps}')
@@ -133,7 +133,7 @@ def preprocess_video(video_path: Path, fps: float = 5.0, scale: float = 0.8,
     ]
 
     crop_str = " + kill feed crop" if crop_killfeed else ""
-    print(f"Preprocessing: {scale*100:.0f}% scale @ {fps} fps{crop_str}...", file=sys.stderr)
+    print(f"Preprocessing: {max_height}p @ {fps} fps{crop_str}...", file=sys.stderr)
     result = subprocess.run(cmd, capture_output=True)
     if result.returncode != 0:
         print(f"Warning: ffmpeg failed: {result.stderr.decode()}", file=sys.stderr)
@@ -186,7 +186,7 @@ def send_request(client, video_b64: str, prompt: str, system_prompt: str = None)
 
 
 def analyze_clip(video_path: Path, prompt: str, server: str, fps: float,
-                 scale: float = 0.8, crop_killfeed: bool = False,
+                 max_height: int = 900, crop_killfeed: bool = False,
                  debug: bool = False, save_thinking: Path = None,
                  system_prompt: str = None) -> str:
     """Send video to Qwen3-VL server for analysis."""
@@ -196,7 +196,7 @@ def analyze_clip(video_path: Path, prompt: str, server: str, fps: float,
     )
 
     print(f"Loading video: {video_path}", file=sys.stderr)
-    video_data = preprocess_video(video_path, fps=fps, scale=scale,
+    video_data = preprocess_video(video_path, fps=fps, max_height=max_height,
                                    crop_killfeed=crop_killfeed, debug=debug)
     video_b64 = base64.b64encode(video_data).decode()
 
@@ -235,10 +235,10 @@ def main():
         help="Frames per second to sample (default: 3.0)",
     )
     parser.add_argument(
-        "--scale",
-        type=float,
-        default=0.6,
-        help="Scale factor for resolution (default: 0.6 = 60%%)",
+        "--height",
+        type=int,
+        default=900,
+        help="Scale to this height in pixels (default: 900)",
     )
     parser.add_argument(
         "--crop",
@@ -267,7 +267,7 @@ def main():
     system_prompt = SYSTEM_PROMPT if args.prompt == DEFAULT_PROMPT else None
 
     result = analyze_clip(args.video, args.prompt, args.server, args.fps,
-                          args.scale, args.crop, args.debug, args.save_thinking,
+                          args.height, args.crop, args.debug, args.save_thinking,
                           system_prompt)
     print(result)
 
