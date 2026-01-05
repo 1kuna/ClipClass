@@ -22,13 +22,19 @@ from openai import OpenAI
 
 DEFAULT_PROMPT = """Count the kills made by the player in this first-person Valorant clip.
 
-STEP 1 - IDENTIFY THE PLAYER'S NAME:
-Watch for moments when YOU (the first-person view) shoot and kill an enemy.
-When the enemy dies, a kill feed entry appears in the top-right.
-The name on the LEFT side of the weapon icon in that entry is YOUR name.
+STEP 1 - SCAN EVERY FRAME SYSTEMATICALLY:
+Go through EVERY frame from start to finish. For each frame, note:
+- What action is the player (first-person view) taking?
+- What entries are visible in the kill feed (top-right corner)?
 
-STEP 2 - COUNT KILLS:
-Once you know the player's name, count ALL kill feed entries where that name appears on the LEFT side.
+STEP 2 - IDENTIFY THE PLAYER'S NAME:
+When YOU (first-person view) shoot and an enemy dies, a kill feed entry appears.
+The name on the LEFT side of the weapon icon in that entry is YOUR name.
+Remember this name for the rest of the video.
+
+STEP 3 - COUNT ALL KILLS:
+Scan the kill feed in EVERY frame. Count each unique entry where the player's name is on the LEFT.
+Don't skip frames - kills can happen rapidly and each kill feed entry is only visible briefly.
 
 Kill feed format: [Killer] [weapon/ability icon] [Victim]
 - Left of icon = killer
