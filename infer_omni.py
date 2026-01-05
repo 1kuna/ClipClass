@@ -10,17 +10,29 @@ Usage:
 
 import argparse
 import base64
+import re
 import sys
 from pathlib import Path
 
 from openai import OpenAI
 
-DEFAULT_PROMPT = """Analyze this gaming clip. Identify:
-1. Kill events (check kill log - username on LEFT of arrow means they got the kill)
-2. Funny or notable moments
-3. Skill level of plays (whiffs vs clutches)
+DEFAULT_PROMPT = """Watch this gaming clip and categorize it with a SHORT label.
 
-Provide a brief summary and categorize as one of: kills_X (X=count), funny, skilled, or other."""
+Output ONLY one of these formats (nothing else):
+- "X eliminations" (where X is the number of kills/eliminations seen)
+- "comedy" (if something funny happens)
+- "skilled play" (impressive gameplay)
+- "fail" (embarrassing mistake)
+- "other"
+
+Examples: "3 eliminations", "comedy", "no eliminations", "skilled play"
+
+Your response must be ONLY the category label, no explanation."""
+
+
+def strip_thinking(text: str) -> str:
+    """Remove <think>...</think> blocks from model output."""
+    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
 
 
 def analyze_clip(video_path: Path, prompt: str, server: str) -> str:
@@ -44,10 +56,10 @@ def analyze_clip(video_path: Path, prompt: str, server: str) -> str:
                 {"type": "video_url", "video_url": {"url": f"data:video/mp4;base64,{video_b64}"}}
             ]
         }],
-        max_tokens=1024
+        max_tokens=128
     )
 
-    return response.choices[0].message.content
+    return strip_thinking(response.choices[0].message.content)
 
 
 def main():
